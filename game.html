@@ -18,7 +18,7 @@ canvas { display:block; }
 </head>
 <body>
 <canvas id="c"></canvas>
-<img id="gameOver" src="Dead_Chay.webp">
+<img id="gameOver" src="assets/Dead_Chay.webp">
 <button id="restartBtn">RESTART</button>
 <script>
 const canvas=document.getElementById("c");
@@ -26,9 +26,10 @@ const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
-const playerImg=new Image(); playerImg.src="character.webp";
-const enemyImg=new Image(); enemyImg.src="Maxic-rig-V3.webp";
-const gunImg=new Image(); gunImg.src="Tgun.png";
+// ✅ Исправленные пути к картинкам
+const playerImg=new Image(); playerImg.src="assets/character.webp";
+const enemyImg=new Image(); enemyImg.src="assets/Maxic-rig-V3.webp";
+const gunImg=new Image(); gunImg.src="assets/Tgun.png";
 
 const player={
   x:200, y:400, vx:0, vy:0, r:35,
