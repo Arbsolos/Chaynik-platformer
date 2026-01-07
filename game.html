@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Grab Platformer Shooter</title>
+<style>
+body { margin:0; overflow:hidden; background:#111; cursor:crosshair; }
+canvas { display:block; }
+#gameOver { position:absolute; top:0; left:0; width:100%; height:100%; display:none; z-index:10; }
+#restartBtn {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  padding:20px 40px; font-size:24px;
+  background:red; color:white; border:none; cursor:pointer;
+  display:none; z-index:11;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<img id="gameOver" src="Dead_Chay.webp">
+<button id="restartBtn">RESTART</button>
+<script>
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+canvas.width=innerWidth;
+canvas.height=innerHeight;
+
+const playerImg=new Image(); playerImg.src="character.webp";
+const enemyImg=new Image(); enemyImg.src="Maxic-rig-V3.webp";
+const gunImg=new Image(); gunImg.src="Tgun.png";
+
+const player={
+  x:200, y:400, vx:0, vy:0, r:35,
+  grabbed:false, squash:1, angle:0, hp:50
+};
+
+const levels=[
+  { platforms:[{x:100,y:500,w:300,h:20},{x:500,y:400,w:250,h:20},{x:900,y:450,w:300,h:20}],
+    finish:{x:1300,y:400,w:50,h:50}, enemies:[] },
+  { platforms:[{x:100,y:500,w:200,h:20},{x:400,y:450,w:150,h:20},{x:650,y:400,w:250,h:20},{x:1000,y:350,w:200,h:20}],
+    finish:{x:1450,y:350,w:50,h:50}, enemies:[{x:500,y:380,vx:0,vy:0,hp:Infinity},{x:1000,y:330,vx:0,vy:0,hp:Infinity}] },
+  { platforms:[{x:50,y:500,w:250,h:20},{x:350,y:450,w:200,h:20},{x:650,y:400,w:150,h:20},{x:850,y:450,w:250,h:20},{x:1200,y:350,w:200,h:20},{x:1500,y:400,w:150,h:20}],
+    finish:{x:1600,y:350,w:50,h:50}, enemies:[{x:600,y:380,vx:0,vy:0,hp:Infinity},{x:900,y:430,vx:0,vy:0,hp:Infinity}] },
+  { platforms:[{x:0,y:500,w:2000,h:50}], finish:{x:1950,y:450,w:50,h:50},
+    enemies:[
+      {x:500,y:450,vx:0.2,hp:Infinity},{x:700,y:450,vx:0.25,hp:Infinity},{x:900,y:450,vx:0.15,hp:Infinity},
+      {x:1100,y:450,vx:0.18,hp:Infinity},{x:1300,y:450,vx:0.22,hp:Infinity}
+    ], bulletsMax:20
+  }
+];
+
+let currentLevel=0, platforms=levels[0].platforms, finish=levels[0].finish, enemies=levels[0].enemies, bullets=[];
+let mouse={x:0,y:0}, shooting=false;
+
+canvas.addEventListener("mousedown",e=>{
+  const dx=e.clientX-player.x, dy=e.clientY-player.y;
+  if(Math.hypot(dx,dy)<player.r) player.grabbed=true, document.body.style.cursor="grabbing";
+  else shooting=true;
+});
+canvas.addEventListener("mouseup",e=>{
+  if(player.grabbed){
+    let dx=mouse.x-player.x, dy=mouse.y-player.y, maxForce=15;
+    player.vx=Math.max(Math.min(-dx*0.15,maxForce),-maxForce);
+    player.vy=Math.max(Math.min(-dy*0.15,maxForce),-maxForce);
+  }
+  player.grabbed=false; document.body.style.cursor="crosshair"; shooting=false;
+});
+canvas.addEventListener("mousemove",e=>{mouse.x=e.clientX; mouse.y=e.clientY;});
+
+function update(){
+  if(!player.grabbed){ player.vy+=0.5; player.x+=player.vx; player.y+=player.vy; player.angle*=0.98; }
+
+  platforms.forEach(p=>{
+    const half=player.r;
+    if(player.x>p.x+half && player.x<p.x+p.w-half && player.y+player.r>p.y && player.y+player.r<p.y+p.h && player.vy>0){
+      player.y=p.y-player.r; player.vy=0; player.vx*=0.7; player.squash=0.7;
+    }
+  });
+
+  if(player.x-player.r<0){player.x=player.r;player.vx*=-0.5;}
+  if(player.x+player.r>canvas.width){player.x=canvas.width-player.r;player.vx*=-0.5;}
+  if(player.y-player.r<0){player.y=player.r;player.vy*=-0.5;}
+  if(player.y+player.r>canvas.height) showGameOver();
+  player.squash+=(1-player.squash)*0.1;
+
+  if(currentLevel<3){
+    enemies.forEach(e=>{
+      const dx=player.x-e.x, dy=player.y-e.y;
+      if(Math.hypot(dx,dy)<player.r+35){player.hp-=0.05; if(player.hp<=0) showGameOver();}
+    });
+  } else {
+    enemies.forEach(e=>{
+      if(player.x>e.x) e.x+=e.vx; else e.x-=e.vx;
+      const dx=player.x-e.x, dy=player.y-e.y;
+      if(Math.hypot(dx,dy)<player.r+35){player.hp-=0.1; if(player.hp<=0) showGameOver();}
+    });
+    if(shooting && bullets.length<levels[3].bulletsMax){
+      let angle=Math.atan2(mouse.y-(player.y-5), mouse.x-(player.x+40));
+      bullets.push({x:player.x+40,y:player.y-5,vx:Math.cos(angle)*10,vy:Math.sin(angle)*10});
+    }
+  }
+
+  bullets.forEach((b,i)=>{
+    b.x+=b.vx; b.y+=b.vy;
+    enemies.forEach((e,j)=>{ if(Math.hypot(b.x-e.x,b.y-e.y)<35){enemies.splice(j,1); bullets.splice(i,1);} });
+    if(b.x>canvas.width||b.y>canvas.height) bullets.splice(i,1);
+  });
+
+  if(player.x+player.r>finish.x && player.x-player.r<finish.x+finish.w && player.y+player.r>finish.y && player.y-player.r<finish.y+finish.h){
+    currentLevel++;
+    if(currentLevel>=levels.length){alert("Ты прошёл все уровни!"); currentLevel=0;}
+    else alert("Следующий уровень!");
+    loadLevel(currentLevel);
+  }
+}
+
+function loadLevel(n){
+  platforms=levels[n].platforms;
+  finish=levels[n].finish;
+  enemies=levels[n].enemies.map(e=>({...e}));
+  player.x=200; player.y=400; player.vx=0; player.vy=0; player.hp=50;
+  bullets=[];
+  document.getElementById("gameOver").style.display="none";
+  document.getElementById("restartBtn").style.display="none";
+}
+
+function showGameOver(){
+  document.getElementById("gameOver").style.display="block";
+  document.getElementById("restartBtn").style.display="block";
+  player.x=-1000; player.y=-1000; player.vx=0; player.vy=0;
+}
+
+document.getElementById("restartBtn").addEventListener("click",()=>loadLevel(currentLevel));
+
+function drawTrajectory(){
+  if(player.grabbed){
+    let tempX=player.x,tempY=player.y,tempVx=(mouse.x-player.x)*-0.15,tempVy=(mouse.y-player.y)*-0.15;
+    ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.lineWidth=2; ctx.setLineDash([5,5]); ctx.beginPath();
+    for(let i=0;i<30;i++){ tempVy+=0.5; tempX+=tempVx; tempY+=tempVy; ctx.lineTo(tempX,tempY); }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#444"; platforms.forEach(p=>ctx.fillRect(p.x,p.y,p.w,p.h));
+  ctx.fillStyle="gold"; ctx.fillRect(finish.x,finish.y,finish.w,finish.h);
+  drawTrajectory();
+
+  ctx.save(); ctx.translate(player.x,player.y); ctx.rotate(player.angle); ctx.scale(1/player.squash,player.squash);
+  ctx.drawImage(playerImg,-player.r,-player.r,player.r*2,player.r*2); ctx.restore();
+
+  enemies.forEach(e=>ctx.drawImage(enemyImg,e.x-35,e.y-35,70,70));
+
+  if(currentLevel===3) ctx.drawImage(gunImg,player.x+player.r-10,player.y-5,50,20);
+
+  bullets.forEach(b=>ctx.drawImage(gunImg,b.x-10,b.y-5,20,10));
+
+  ctx.fillStyle="red"; ctx.fillRect(20,20,player.hp*4,20);
+  ctx.strokeStyle="#fff"; ctx.strokeRect(20,20,200,20);
+}
+
+function loop(){
+  update(); draw(); requestAnimationFrame(loop);
+}
+
+loop();
+
+window.addEventListener("resize",()=>{canvas.width=innerWidth; canvas.height=innerHeight;});
+</script>
+</body>
+</html>
