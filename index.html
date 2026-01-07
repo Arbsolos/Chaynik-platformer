@@ -16,7 +16,7 @@ body {
   align-items:center;
   font-family: 'Press Start 2P', cursive;
   color:white;
-  background: url('https://static.wikia.nocookie.net/mdp-fanon/images/e/ed/GalaxyBackground.gif/revision/latest?cb=20251025175319') no-repeat center center fixed;
+  background: url('assets/background.gif') no-repeat center center fixed; /* локальный фон */
   background-size: cover;
   overflow:hidden;
 }
@@ -31,44 +31,4 @@ h1 {
 
 @keyframes glow {
   from { text-shadow: 2px 2px 10px #0a1729, 0 0 20px #0a1729; }
-  to   { text-shadow: 2px 2px 30px #04031f, 0 0 50px #04031f; }
-}
-
-button {
-  padding: 20px 60px;
-  font-size: 24px;
-  color: white;
-  background: linear-gradient(45deg,#3321a6,#2f08a3);
-  border:none;
-  border-radius:15px;
-  cursor:pointer;
-  box-shadow: 0 0 20px #11031c, 0 0 40px #8c00ff;
-  transition: all 0.3s ease;
-}
-
-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 40px #4800ff, 0 0 80px #4800ff;
-}
-
-button:active {
-  transform: scale(0.95);
-}
-
-@media (max-width:600px){
-  h1 { font-size:36px; }
-  button { padding:15px 40px; font-size:18px; }
-}
-</style>
-</head>
-<body>
-<h1>Chaynik Platformer</h1>
-<button onclick="startGame()">PLAY</button>
-
-<script>
-function startGame(){
-  window.location.href="game.html";
-}
-</script>
-</body>
-</html>
+  t
